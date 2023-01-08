@@ -3,7 +3,7 @@
 import sys
 import json
 import time
-from urllib import request
+from urllib import request, error
 import argparse
 
 
@@ -18,6 +18,21 @@ if __name__ == '__main__':
     host = args.host
     port = args.port
     tunnel_id = host + '-' + port
+
+    def cleanup():
+        delete_url = 'http://127.0.0.1:2019/id/' + tunnel_id
+        req = request.Request(method='DELETE', url=delete_url)
+        try:
+            request.urlopen(req)
+            return True
+        except error.HTTPError as e:
+            if e.code == 404:
+                return False
+            else:
+                raise
+
+    print('Cleaning up any potential stale registrations')
+    while cleanup(): pass
 
     caddy_add_route_request = {
         "@id": tunnel_id,
@@ -52,9 +67,6 @@ if __name__ == '__main__':
         try:
             time.sleep(1)
         except KeyboardInterrupt:
-
             print("Cleaning up tunnel")
-            delete_url = 'http://127.0.0.1:2019/id/' + tunnel_id
-            req = request.Request(method='DELETE', url=delete_url)
-            request.urlopen(req)
+            cleanup()
             break
