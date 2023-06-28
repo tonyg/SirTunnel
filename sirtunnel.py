@@ -5,12 +5,14 @@ import json
 import time
 from urllib import request, error
 import argparse
-
+import subprocess
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--tls', action='store_true')
     parser.add_argument('--insecure', action='store_true')
+    parser.add_argument('--user', type=str)
+    parser.add_argument('--password', type=str)
     parser.add_argument('host')
     parser.add_argument('port')
     args = parser.parse_args(sys.argv[1:])
@@ -52,6 +54,21 @@ if __name__ == '__main__':
         if args.insecure:
             tls_options['insecure_skip_verify'] = True
         caddy_add_route_request['handle'][0]['transport'] = {"protocol": "http", "tls": tls_options}
+
+    if args.user:
+        password = args.password or ''
+        hashed_password = subprocess.check_output(
+            ['caddy', 'hash-password', '-plaintext', password],
+            text=True).strip()
+        caddy_add_route_request['handle'].insert(0, {
+            "handler": "authentication",
+            "providers": {
+                "http_basic": {
+                    "accounts": [{ "username": args.user, "password": hashed_password }],
+                    "hash_cache": {}
+                }
+            }
+        })
 
     body = json.dumps(caddy_add_route_request).encode('utf-8')
     headers = {
