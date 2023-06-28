@@ -61,7 +61,7 @@ if __name__ == '__main__':
     req = request.Request(method='POST', url=create_url, headers=headers)
     request.urlopen(req, body)
 
-    print("Tunnel created successfully")
+    print(f"Tunnel {host} created successfully")
 
     while True:
         try:
